@@ -23,7 +23,8 @@ email: "helainerfischer@gmail.com" <helainerfischer@gmail.com>
 description: >- # this means to ignore newlines until "baseurl:"
   Helping clients identify and realize their professional and personal ambitions.
 baseurl: "/site" # the subpath of your site, e.g. /blog
-site: ""
+url: "https://ari-fischer.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+github_username:  ari-fischer
 
 # Build settings
 theme: minima
