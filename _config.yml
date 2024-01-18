@@ -18,10 +18,10 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 
-title: Ari Fischer
-email: ari.f.fischer10@gmail.com
+title: Helaine Fischer Executive Coach
+email: helaine.r.fischer@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  Researching chemistry-based solutions to the problems surrounding energy and sustainable materials production that define our times!
+  Build tools and strategies to help clients identify and realize personal and professional goals!
 baseurl: "/site" # the subpath of your site, e.g. /blog
 url: "https://ari-fischer.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 github_username:  ari-fischer
