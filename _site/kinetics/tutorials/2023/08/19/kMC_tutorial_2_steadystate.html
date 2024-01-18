@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Steady-state kinetics with kinetic Monte Carlo in Python and the connection to mean field kinetic descriptions. | Ari Fischer</title>
+<meta name="generator" content="Jekyll v4.3.2" />
+<meta property="og:title" content="Steady-state kinetics with kinetic Monte Carlo in Python and the connection to mean field kinetic descriptions." />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Researching chemistry-based solutions to the problems surrounding energy and sustainable materials production that define our times!" />
+<meta property="og:description" content="Researching chemistry-based solutions to the problems surrounding energy and sustainable materials production that define our times!" />
+<link rel="canonical" href="http://localhost:4000/site/kinetics/tutorials/2023/08/19/kMC_tutorial_2_steadystate.html" />
+<meta property="og:url" content="http://localhost:4000/site/kinetics/tutorials/2023/08/19/kMC_tutorial_2_steadystate.html" />
+<meta property="og:site_name" content="Ari Fischer" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2023-08-19T00:00:00+08:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Steady-state kinetics with kinetic Monte Carlo in Python and the connection to mean field kinetic descriptions." />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2023-08-19T00:00:00+08:00","datePublished":"2023-08-19T00:00:00+08:00","description":"Researching chemistry-based solutions to the problems surrounding energy and sustainable materials production that define our times!","headline":"Steady-state kinetics with kinetic Monte Carlo in Python and the connection to mean field kinetic descriptions.","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/site/kinetics/tutorials/2023/08/19/kMC_tutorial_2_steadystate.html"},"url":"http://localhost:4000/site/kinetics/tutorials/2023/08/19/kMC_tutorial_2_steadystate.html"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/site/feed.xml" title="Ari Fischer" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/site/">Ari Fischer</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/site/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Steady-state kinetics with kinetic Monte Carlo in Python and the connection to mean field kinetic descriptions.</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2023-08-19T00:00:00+08:00" itemprop="datePublished">Aug 19, 2023
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p><img src="/site/assets/images/KMC_tutorial_2/TOC.png" alt="TOC" /></p>
+
+<p><em>Introduction:</em></p>
+
+<p>The previous guide
+(<a href="https://ari-fischer.github.io/site/kinetics/tutorials/2023/07/23/KMC_tutorial_1_equilibrium.html">https://ari-fischer.github.io/site/kinetics/tutorials/2023/07/23/KMC_tutorial_1_equilibrium.html</a>)
+introduced the concept of kinetic Monte Carlo (kMC) and built a code to
+simulate the dynamics of reactant <em>A</em> conversion into product <em>B</em> at a
+catalytic surface. The mole fraction of <em>A</em> and <em>B</em> that the catalyst
+surface was exposed to was evolved from an initial state consisting of
+only <em>A</em> to a final state reflecting thermodynamic equilibrium between
+<em>A</em> and <em>B</em>. The true power of kMC, however, lies in determining kinetic
+behaviors for complex systems, rather than determining thermodynamic
+endpoints which are independent of the path taken by the system. The
+reader is referred to Andersen et al. for some examples where kMC has
+been applied to study the kinetics of surface diffusion, crystal growth,
+and heterogeneous catalysis [1].</p>
+
+<p>Here, a kMC model of the same <em>A</em> to <em>B</em> reaction is employed to
+simulate steady-state dynamics and obtain reaction rates and effective
+rate constants. These rates and parameters are shown to be identical to
+those obtained by analyzing Langmuir-Hinshelwood kinetics for the same
+reaction. In doing so, it becomes clear how dynamic behaviors gleaned
+from kMC simulations reflect the same kinetics as those from mean-field
+descriptions of reaction kinetics.</p>
+
+<p><em>Analyzing steady-state kinetics with mean field kinetic descriptions:</em></p>
+
+<p>Scheme 1 shows the sequence of elementary steps that mediates <em>A</em>
+conversion to <em>B</em> on a catalyst surface. Step 1 shows the adsorption
+of <em>A</em> to a vacant *-site (denoted by *) to form <em>A</em> to form <em>A</em>*.
+Step 2 shows the conversion of <em>A</em>* to <em>B</em>* at the surface. Step 3
+shows the desorption of <em>B</em>* to form the product <em>B</em> and a vacant *-site.</p>
+
+<p><strong>Scheme 1</strong>: A sequence of elementary steps for the conversion of
+species <em>A</em> to <em>B</em> on a catalytic site (denoted by *). The <em>k<sub>i</sub></em> terms
+represent forward and reverse rate constants for each reaction step.</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/scheme1.png" alt="Scheme 1" /></p>
+
+<p>Mean field rate expressions for each of the elementary step in Scheme 1
+occurring on <em>L<sub>*</sub></em> active sites are obtained by considering each step
+to be reversible and with their forward and reverse rates related to
+reactant mole fractions from the law of mass action (i.e. that the rate
+of reaction is proportional to the product of reactant thermodynamic
+activities) [2]:</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/eqn1.png" alt="eq 1" /></p>
+
+<p>Here, <em>y<sub>A</sub></em> and <em>y<sub>B</sub></em> are the mole fractions of <em>A</em> and <em>B</em>,
+respectively; θ<sub>A</sub>, θ<sub>B</sub>, and θ<sub><em>&lt;/sub&gt; are the
+fractional surface coverages of *A</em>, <em>B</em> and vacancies on <em>L*</em> sites;
+and <em>k<sub>i</sub></em> are rate constants with corresponding steps denoted in Scheme
+1.</sub></p>
+
+<p>An analytical expression for the rate of <em>B</em> formation can be derived
+based on the following assumptions consistent with the values of rate
+constants in Table 1. First, <em>B</em>* desorbs much faster than it reacts at
+the surface to re-form <em>A</em>* (<em>k<sub>-B</sub></em>/<em>k<sub>BA</sub></em>=100000), indicating that
+<em>B</em>* formation in Step 2 is irreversible. The rate of Step 2 can
+therefore be restated as:</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/eqn2.png" alt="eq 2" /></p>
+
+<p>Secondly, <em>A</em>* desorbs much faster than it reacts to form <em>B</em>*
+(<em>k<sub>-A</sub></em>/<em>k<sub>AB</sub></em>=100) indicating that Step 1 occurs at quasi-equilibrium
+(i.e. the forward and reverse rates of Step 1 are both much larger than
+the net rate of reaction). Approximating the net rate of Step 1 as zero
+gives the quasi-equilibrium coverage of <em>A</em>*:</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/eqn3.png" alt="eq 3" /></p>
+
+<p>The coverage of vacant *-sites, <em>A</em>*, and <em>B</em>* are related by the
+conservation of occupied and unoccupied <em>L</em>* sites, given by:</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/eqn4.png" alt="eq 4" /></p>
+
+<p>The coverage of <em>B</em>* is assumed to be negligible at low conversion (low
+<em>y<sub>B</sub></em>) because <em>B</em>* desorbs faster than it adsorbs
+(<em>k<sub>-B</sub></em>/<em>k<sub>B</sub></em>=10). An expression for θ<sub>*</sub> can be obtained by
+neglecting the θ<sub>B</sub> term, replacing θ<sub>A</sub> with its value
+from equation 5, and solving for θ<sub>*</sub>:</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/eqn5.png" alt="eq 5" /></p>
+
+<p>The net rate of <em>B</em> formation is obtained by replacing the θ<sub>*</sub>
+term in equation 5 with its value from equation 7, and then substituting
+the resulting expression for θ<sub>A</sub> into equation 4:</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/eqn6.png" alt="eq 6" /></p>
+
+<p>This equation thus relates the rate of <em>B</em> formation normalized by the
+number of *-sites to the mole fraction of <em>A</em> and the kinetic constants
+for its reaction at *-sites.</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/table1.png" alt="table 1" /></p>
+
+<p>Figure 1 shows the effect of <em>y<sub>A</sub></em> on the coverages of vacant *-sites
+and <em>A</em>* (left) and on the rate of <em>B</em> formation (right) (with <em>y<sub>A</sub></em>
+changed by diluting <em>A</em> with an inert gas like He). Intuitively,
+coverages of <em>A*</em> increase and vacant * decrease as <em>y<sub>A</sub></em> increases
+and <em>A</em> adsorption becomes more favorable. The rate of <em>B</em> formation
+increases proportional to the <em>A*</em> coverage, reflecting the functional
+form of equation 4.</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/figure1.png" alt="figure 1" /></p>
+
+<p><strong>Figure 1:</strong> <em>A</em>* and vacant *-site coverages (left) and <em>B</em>
+formation rate (right) as a function of <em>A</em> mole fraction (<em>y<sub>A</sub></em>).</p>
+
+<p>Equation 8 relates the macroscopic rate of <em>B</em> formation to the
+macroscopic mole fraction of reactant <em>A</em>. Its derivation requires a
+fractional coverage of active sites to be defined, which implicitly
+requires a large number of active sites so that fractional coverages
+behave as continuous functions. This rate expression is a faithful
+description of reactivity only at length and time scales in the
+thermodynamic limit where these macroscopic observables are significant.
+The single active site considered in the kMC model from the previous
+walkthrough, on the other hand, considers only a single active site,
+that is either occupied or unoccupied, but cannot partially occupied.
+Moreover, products are formed one at a time by the desorption of <em>B</em>
+from a <em>B</em>-covered *-site in a stochastic manner, rather than forming
+continuously at a constant rate.</p>
+
+<p>The reaction we are considering has properties that enables its
+microscopic and macroscopic observables to be related. First, it is
+Markovian, meaning that the next step taken from the current state
+depends only on the present configuration, but not on the previous steps
+[2]. It is also ergodic, meaning that all possible states of the
+system are dynamically accessible from one another [2]. Finally, the
+process has time-translational symmetry, meaning that the probabilities
+for transitioning from one state to another depends only on relative,
+but not absolute, time [2]. For systems with these properties, the
+probability of finding the system in each of the possible states follows
+a unique distribution after a long enough simulation time.</p>
+
+<p>In the example catalytic reaction, for instance, the average amount of
+time that the system is found in states <em>A</em>*, <em>B</em>*, or * reflects the
+unique probability of finding the system in that state for a simulation
+with a long enough time elapsed. This characteristic implies that
+simulating the behavior of a single site over a long enough simulation
+time gives time-averaged representations of macroscopic observables like
+coverages and <em>B</em> formation rates, which can be compared with those
+quantities obtained from the mean field kinetic models derived above.
+These time-averaged quantities are calculated next from a kMC
+simulation.</p>
+
+<p><em>Adapting the kMC code to simulate steady-state behaviors:</em></p>
+
+<p><em>(link to code:
+<a href="https://github.com/ari-fischer/kinetics_tutorial/tree/92e92c102a27a431a2ba9d655732d157fef8f4dc/KMC_tutorials">https://github.com/ari-fischer/kinetics_tutorial/tree/92e92c102a27a431a2ba9d655732d157fef8f4dc/KMC_tutorials</a>)</em></p>
+
+<p>The model developed in the previous guide (to simulate thermodynamic
+behaviors) includes a bath of reactant <em>A</em> and product <em>B</em>, initialized
+at zero time as follows:</p>
+
+<blockquote>
+
+  <p>#initialize:</p>
+
+  <p>N_A = 1000</p>
+
+  <p>N_B = 0</p>
+</blockquote>
+
+<p>The catalyst surface interacts with the reservoir in each step of the
+kMC simulation by either (i) removing <em>A</em> or <em>B</em> from the reservoir if
+an adsorption event took place, or (ii) adding A or B to the reservoir
+if the desorption of <em>A</em>* or <em>B</em>*, respectively, took place. For
+instance, if the current state was a vacant site, and the selected move
+for that step was to adsorb <em>A</em>, then one <em>A</em> was removed from the
+reservoir (“N_A += -1”) and the state of the site was changed to the
+<em>A</em>-covered state (“L = 1”), implemented as follows:</p>
+
+<blockquote>
+  <p>for i in range(trials): #vacant site</p>
+
+  <p>…</p>
+
+  <p>if L == 0: #vacant site</p>
+
+  <p>…</p>
+
+  <p>if ind_move == 0: # A adsorption selected</p>
+
+  <p>L = 1 # change from vacant site to A-covered site (A*)</p>
+
+  <p>N_A += -1 # remove one species A from the reservoir</p>
+</blockquote>
+
+<p>As the simulation progresses, <em>A</em> is progressively consumed and <em>B</em>
+generated until the ratio of <em>A</em> to <em>B</em> in the reservoir establishes
+thermodynamic equilibrium. Such equilibration occurs because the
+probabilities that <em>A</em> and <em>B</em> adsorb to a vacant site are proportional
+to their mole fractions in the reservoir. Consequently, as <em>A</em> is
+depleted, <em>A</em>* formation from <em>A</em> adsorption becomes slower, while an
+increase in <em>B</em> increases the rate of <em>B</em>* formation from <em>B</em>
+adsorption.</p>
+
+<p>Steady-state kinetics for <em>A</em> conversion to <em>B</em> are instead obtained by
+fixing the mole fractions of <em>A</em> and <em>B</em> in the reservoir so that the
+probabilities for <em>A</em> and <em>B</em> adsorption do not change with the
+simulation time. This is achieved by simply commenting out the “N_A +=
+-1” line from the previous simulation so that the <em>A</em>-adsorption step
+does not affect the amount of <em>A</em> in the reservoir. The same is done for
+the <em>B</em>-desorption step (“N_B += 1”). We still, however, want to keep
+track of the number of products formed during a simulation, so the we
+define a number of products formed “N_P” initialized as:</p>
+
+<blockquote>
+  <p>N_P = 0</p>
+
+  <p>…</p>
+
+  <p>N_Ps = list([N_P])</p>
+</blockquote>
+
+<p>And we add 1 to this every time <em>B</em> desorbs from the site:</p>
+
+<blockquote>
+  <p>for i in range(trials): #vacant site</p>
+
+  <p>…</p>
+
+  <p>elif L == 2: #vacant site</p>
+
+  <p>…</p>
+
+  <p>if ind_move == 0: # A adsorption selected</p>
+
+  <p>L = 0</p>
+
+  <p>N_P += 1#add this one in as a tracer of products formed</p>
+</blockquote>
+
+<p>This N_P is simply a tracker of the number of <em>B</em> products formed, but
+does not influence the frequencies of any steps (because no rate
+constants depend on a <em>P</em> mole fraction).</p>
+
+<p>Figure 2 shows the number of <em>B</em> products formed (from N_Ps) as a
+function of simulation time for a simulation of 100,000 trial steps. The
+number of products increase linearly with time reflecting steady-state
+behavior. The rate of <em>P</em> product (per site) is given by the slope of
+this trend.</p>
+
+<p>Figure 2 also shows the trend on a shorter time interval (1000 steps).
+The number of products formed is always an integer value, and jumps from
+value to value after a varying amount of time elapses. The period
+between increases in products formed reflects the time elapsed while
+other moves that do not involve product formation occur (<em>A</em>*
+adsorption, for instance), and the waiting time for <em>B</em>* to desorb. It
+becomes clear on short time scales that the kMC simulation does not
+report the number of products formed as continuous function (despite the
+appearance of such over long timescales in Figure 2a), but is instead
+discrete (because only integer numbers of product can form, not
+fractions of one).</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/figure2.png" alt="figure 2" /></p>
+
+<p><strong>Figure 2:</strong> Number of products formed as a function of simulation time
+after a long time (left) and shorter time interval (right).</p>
+
+<p>Steady-state <em>B</em> formation rates and surface coverages are obtained by
+taking time-averages of these quantities over a long enough simulation
+time. Rates are obtained by normalizing the number of products formed by
+the time elapsed:</p>
+
+<blockquote>
+  <p>#calculate rates</p>
+
+  <p>rates = np.sum(N_Ps)/np.sum(ts)</p>
+</blockquote>
+
+<p>Coverages are obtained by finding the amount of time the system exists
+in each state, and normalizing by the total simulation time, shown for a
+vacant surface, for instance, with L=0:</p>
+
+<blockquote>
+  <p>#convert Ls into np array, and get rid of last element to report time elapsed for coverages</p>
+
+  <p>Ls_np = np.array(Ls[0:-1])</p>
+
+  <p>#indexes where surface is vacant (L==0)</p>
+
+  <p>L0_ind = np.where(Ls_np == 0)</p>
+
+  <p>ts_np = np.array(ts)</p>
+
+  <p>#time elapsed in for each instance where L==0</p>
+
+  <p>time_L0 = np.sum(ts_np[L0_ind[0]+1]-ts_np[L0_ind[0]])</p>
+
+  <p>#normalize vacant time with total elapsed time</p>
+
+  <p>cov_v = time_L0/ts_np[-1]</p>
+</blockquote>
+
+<p>The simulation coverages and rates can be reported from these averages
+as follows:</p>
+
+<p>* coverage: 0.09190093419008047</p>
+
+<p>A coverage: 0.9072329666594803</p>
+
+<p>B coverage: 0.09190093419008047</p>
+
+<p>rates: 0.0891111360522377</p>
+
+<p><em>Comparing kMC simulation results to the mean-field kinetic
+description:</em></p>
+
+<p>The rate of <em>B</em> formation for a <em>y<sub>A</sub></em> value of unity was found to be
+0.089 from the kMC simulation, which is similar to the pseudo-steady
+state value obtained from the mean-field equation in equation 8 (0.091).
+The trends for coverage and rates with changing <em>y<sub>A</sub></em> values, but
+constant (zero) <em>y<sub>B</sub></em> values, are obtained by initializing the simulation
+with different numbers of N_A, for a fixed total number of species in
+the reservoir, denoted as N_tot:</p>
+
+<blockquote>
+  <p># initialize:</p>
+
+  <p>…</p>
+
+  <p>N_tot = 1000</p>
+</blockquote>
+
+<p>Then, kA_a and kB_a values are parameterized based on N_A and N_B
+normalized by N_tot, instead of by the sum of N_A and N_B, to reflect
+other inert species (like He) making up the balance in the reservoir:</p>
+
+<blockquote>
+  <p>for i in range(trials):</p>
+
+  <p>…</p>
+
+  <p>if L == 0: #vacant site</p>
+
+  <p>kA_a = kA_a0 * (N_A)/(N_tot)</p>
+
+  <p>kB_a = kB_a0 * (N_B)/(N_tot)</p>
+</blockquote>
+
+<p>Running the simulation for a series of N_A values, and constant N_tot
+and N_B (zero), reproduces the trend from Figure 1. These data are shown
+alongside the results from the mean field kinetic model in Figure 3. The
+close agreement between mean-field descriptions and kMC simulations
+shows how time-averaged behaviours from a reactions on single site with
+discrete descriptions of site occupancy and product formation report the
+same kinetic trends as continuous mean field descriptions. Such
+agreement reflects the fact that the kMC simulation samples the same
+distribution of states as the ensemble considered in deriving the
+Langmuir-Hinshellwood kinetic expressions.</p>
+
+<p><img src="/site/assets/images/KMC_tutorial_2/figure3.png" alt="figure 3" /></p>
+
+<p><strong>Figure 3:</strong> Coverage of <em>A</em>* and vacant *-sites (Left) and <em>B</em>
+formation rates as a function of <em>y<sub>A</sub></em> mole fractions from mean-field
+descriptions (MF) and time-averaged behaviours from kMC simulations
+(kMC).</p>
+
+<p><em>Exercises:</em></p>
+
+<p>1. Compare rates obtained from different simulation times to see how
+much the average values vary, and how long a sampling time is necessary
+to obtain reliable reported values.</p>
+
+<p>2. What changes to the rate constants in Table 1 invalidate the
+assumptions made in deriving equation 8? How can this be probed with the
+kMC simulation?</p>
+
+<p>3. Adapt the code to consider a more complex reaction like
+A&lt;-&gt;A*&lt;-&gt;B*&lt;-&gt;C*</p>
+
+<p><em>References:</em></p>
+
+<p>[1] Andersen M, Panosetti C, Reuter K. A Practical Guide to Surface
+Kinetic Monte Carlo Simulations. Front Chem. 2019;7:202.</p>
+
+<p>[2] Reaction rate theory and rare events (Chapter 14). B Peters.
+Elsevier, 2017. ISBN: 978-0-444-56349-1</p>
+
+<p><em>Appendix:</em></p>
+
+<p>The sample code is available as a Jupyter notebook entitled
+“kMC_A_B_rxn_single_site_eq.ipynb” at the ari-fischer GitHub page
+(<a href="https://github.com/ari-fischer/">https://github.com/ari-fischer/</a>) in the “kinetics_tutorial”
+repository under the “KMC_tutorials” folder</p>
+
+  </div><a class="u-url" href="/site/kinetics/tutorials/2023/08/19/kMC_tutorial_2_steadystate.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/site/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Ari Fischer</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Ari Fischer</li><li><a class="u-email" href="mailto:ari.f.fischer10@gmail.com">ari.f.fischer10@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ari-fischer"><svg class="svg-icon"><use xlink:href="/site/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ari-fischer</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Researching chemistry-based solutions to the problems surrounding energy and sustainable materials production that define our times!</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
