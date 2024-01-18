@@ -27,7 +27,7 @@ url: "https://ari-fischer.github.io" # the base hostname & protocol for your sit
 github_username:  ari-fischer
 
 # Build settings
-theme: minima
+theme: jekyll-yamt
 plugins:
   - jekyll-feed
 
