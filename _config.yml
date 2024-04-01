@@ -40,12 +40,6 @@ plugins:
   - jekyll-feed
 logo: /assets/images/logo.png
 
-nav:
-  - title: About
-    url: '/about.markdown'
-
-
-
 
 # Exclude from processing.
 # The following items will not be processed, by default.
