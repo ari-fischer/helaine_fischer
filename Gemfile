@@ -8,10 +8,7 @@ source "https://rubygems.org"
 # This will help ensure the proper Jekyll version is running.
 gem "jekyll", "~> 4.3.2"
 # Happy Jekylling!
-# gem "jekyll-theme-persephone"
 gem "minimal-mistakes-jekyll"
-
-# https://github.com/erlzhang/jekyll-theme-persephone
 
 # If you want to use GitHub Pages, remove the "gem "jekyll"" above and
 # uncomment the line below. To upgrade, run `bundle update github-pages`.
