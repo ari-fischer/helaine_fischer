@@ -32,12 +32,10 @@ twitter_username: jekyllrb
 github_username:  jekyll
 
 # Build settings
-# theme: jekyll-theme-persephone
-#theme: minima
 theme: minimal-mistakes-jekyll
-#layout: single
 plugins:
   - jekyll-feed
+
 logo: /assets/images/logo.png
 
 
