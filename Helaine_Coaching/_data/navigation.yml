@@ -1,0 +1,5 @@
+main:
+  - title: "testimonials"
+    url: "/testimonials/"
+  - title: "contact"
+    url: "/contact/"
